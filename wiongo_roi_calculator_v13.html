@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Prevent browser caching of stale state -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Calculadora ROI — Wiongo Robotics</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Montserrat',Arial,sans-serif;background:#0B1A2A;color:#fff;min-height:100vh}
+:root{--navy:#0B1A2A;--navyL:#112236;--navyM:#16304F;--cyan:#00AEEF;--cyanD:#0090C8;--cyanA:rgba(0,174,239,0.12);--cyanA2:rgba(0,174,239,0.22);--green:#22C55E;--orange:#F59E0B;--red:#EF4444;--muted:rgba(255,255,255,0.45);--faint:rgba(255,255,255,0.07)}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,var(--navyL),#0d2035);border-bottom:2px solid var(--cyan);padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
+.hdr-logo{height:46px;object-fit:contain}
+.hdr-center{text-align:center}
+.hdr-title{font-size:17px;font-weight:800}
+.hdr-title span{color:var(--cyan)}
+.hdr-sub{font-size:11px;color:var(--muted)}
+
+/* STEPPER */
+.stepper{display:flex;justify-content:center;gap:0;padding:20px 0 8px}
+.step-item{display:flex;align-items:center}
+.step-line{width:36px;height:2px;background:var(--faint)}
+.step-line.done{background:var(--cyan)}
+.step-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.3);transition:all .3s;background:transparent}
+.step-circle.active{border-color:var(--cyan);background:var(--cyan);color:var(--navy)}
+.step-circle.done{border-color:var(--cyan);background:var(--cyan);color:var(--navy)}
+.step-label{font-size:11px;font-weight:500;color:rgba(255,255,255,0.3);margin-left:6px;white-space:nowrap}
+.step-label.active,.step-label.done{color:#fff;font-weight:700}
+
+/* CONTAINER */
+.container{max-width:880px;margin:0 auto;padding:12px 18px 40px}
+
+/* CARDS */
+.card{background:var(--navyL);border:1px solid var(--faint);border-radius:14px;padding:22px 26px;margin-bottom:14px}
+.card-cyan{background:rgba(0,174,239,0.08);border:1px solid var(--cyanA2)}
+.card-result{background:linear-gradient(135deg,var(--cyanA2),var(--cyanA));border:1px solid var(--cyan)}
+.section-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);margin:0 0 16px}
+.hint-box{background:rgba(0,174,239,0.06);border:1px solid var(--cyanA);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.6}
+.hint-box strong{color:#fff}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.span2{grid-column:span 2}
+.span3{grid-column:span 3}
+
+/* FORM ELEMENTS */
+label.lbl{font-size:11px;color:var(--muted);display:block;margin-bottom:5px}
+input[type=text],input[type=email],input[type=tel],input[type=number],select{
+  background:var(--navyM);border:1px solid rgba(0,174,239,0.25);border-radius:8px;
+  padding:8px 12px;color:#fff;font-size:14px;font-weight:600;width:100%;
+  font-family:inherit;outline:none;appearance:none}
+input[type=text].big{font-size:17px;font-weight:700;padding:12px 14px}
+input[type=range]{width:100%;accent-color:var(--cyan);cursor:pointer}
+.range-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px}
+
+/* BUTTONS */
+.btn-p{background:linear-gradient(135deg,var(--cyan),var(--cyanD));border:none;border-radius:10px;padding:14px 24px;color:var(--navy);font-size:14px;font-weight:800;cursor:pointer;width:100%;font-family:inherit;transition:opacity .2s}
+.btn-p:hover{opacity:.9}
+.btn-p:disabled{opacity:.4;cursor:not-allowed}
+.btn-s{background:transparent;border:1px solid var(--faint);border-radius:10px;padding:12px 24px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;width:100%;font-family:inherit;transition:opacity .2s}
+.btn-s:hover{opacity:.7}
+.btn-dark{background:linear-gradient(135deg,#1a3a5c,#0d2035);border:none;border-radius:10px;padding:14px 24px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;width:100%;font-family:inherit}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+
+/* HOTEL TYPE CARDS */
+.hotel-card{background:var(--faint);border:2px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .2s}
+.hotel-card:hover{border-color:rgba(0,174,239,0.4)}
+.hotel-card.selected{background:var(--cyanA2);border-color:var(--cyan)}
+.hotel-card-name{font-size:18px;font-weight:800;color:#fff}
+.hotel-card.selected .hotel-card-name{color:var(--cyan)}
+.hotel-card-guests{font-size:12px;color:var(--muted);margin-bottom:8px}
+.hotel-stat{display:flex;justify-content:space-between;font-size:12px;margin-top:4px}
+.hotel-stat-v{font-weight:700}
+
+/* DEPT CARDS */
+.dept-card{background:var(--faint);border:2px solid rgba(255,255,255,0.06);border-radius:11px;padding:13px 15px;cursor:pointer;transition:all .2s;display:flex;gap:11px;align-items:flex-start}
+.dept-card:hover{border-color:rgba(0,174,239,0.3)}
+.dept-card.selected{background:var(--cyanA);border-color:var(--cyan)}
+.dept-icon{font-size:20px;line-height:1}
+.dept-name{font-size:14px;font-weight:700;color:#fff}
+.dept-card.selected .dept-name{color:var(--cyan)}
+.dept-desc{font-size:11px;color:var(--muted)}
+.dept-robots{font-size:11px;color:rgba(0,174,239,0.6);margin-top:2px}
+.dept-check{width:18px;height:18px;border-radius:4px;background:transparent;border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;color:var(--navy);font-weight:900;transition:all .2s}
+.dept-card.selected .dept-check{background:var(--cyan);border-color:var(--cyan)}
+
+/* PHYSICS PREVIEW */
+.phys-preview{background:var(--faint);border-radius:8px;padding:12px 16px;margin-top:12px}
+.phys-item{text-align:center}
+.phys-item .lv{font-size:10px;color:var(--muted);margin-bottom:2px}
+.phys-item .vv{font-size:16px;font-weight:700;color:#fff}
+.phys-item .vv.cyan{color:var(--cyan)}
+.phys-item .vv.green{color:var(--green)}
+
+/* LIVE PREVIEW */
+.live-preview{background:linear-gradient(135deg,var(--cyanA2),var(--cyanA));border:1px solid var(--cyan);border-radius:14px;padding:18px 22px;margin-bottom:14px}
+.live-item{text-align:center}
+.live-item .ll{font-size:11px;color:var(--muted)}
+.live-item .lv{font-size:18px;font-weight:800}
+
+/* RESULTS */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:14px}
+.kpi-card{background:var(--faint);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px;text-align:center}
+.kpi-card.hl{background:var(--cyanA2);border-color:var(--cyan)}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.kpi-value{font-size:28px;font-weight:800}
+.kpi-card.hl .kpi-value{color:var(--cyan)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* SEMÁFORO */
+.semaforo{border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:14px;margin-bottom:14px;border:1px solid}
+
+/* DEPT RESULT */
+.dept-result{background:var(--faint);border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.dept-result-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.dept-result-method{font-size:10px;color:rgba(0,174,239,0.65);margin-top:2px}
+
+/* TABLE */
+.summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--faint);font-size:13px}
+.summary-row:last-child{border-bottom:none;padding-top:14px;margin-top:6px;border-top:2px solid var(--cyan)}
+.summary-total .vl{font-size:36px;font-weight:800;color:var(--cyan);text-align:center;margin-top:8px}
+
+/* CONSENT */
+.consent-row{display:flex;gap:11px;cursor:pointer;margin-top:18px;align-items:flex-start}
+.consent-box{width:18px;height:18px;border-radius:4px;background:transparent;border:2px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;color:var(--navy);font-weight:900;transition:all .2s}
+.consent-box.checked{background:var(--cyan);border-color:var(--cyan)}
+.consent-text{font-size:11px;color:var(--muted);line-height:1.5}
+
+.error-msg{color:var(--red);font-size:12px;margin-top:10px}
+.disclaimer{font-size:10px;color:rgba(255,255,255,0.2);text-align:center;line-height:1.7;margin-top:8px}
+
+/* CHART */
+.chart-wrap{position:relative;height:220px;margin-top:12px}
+
+/* FOOTER NOTE */
+.foot-note{font-size:10px;color:rgba(255,255,255,0.2);text-align:center;line-height:1.7;padding:0 20px}
+
+/* PRINT HIDDEN */
+@media print{body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <img class="hdr-logo" src="data:image/png;base64,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eTWs46PC5U/Q46j2Nen6B+0B4m0xVi1OGDU4143MPLk+pI4P5UAfUdFeR6N+0F4WvsLfw3envwCXTepPsVz+tdpYfEXwhqYAtdfsmcjOwygMPwNAHUUVUj1TT5VBjvrZge4lU/1qdZ4mHyyoR7MKAJKKaXUDJYY+tRvc26DLzxqB6uBQBNRVGbWdLt0LTajaIB3Myj+tYd78SPB2n5E/iGxDD+BZAW/IUAdVRXlep/H7wdZZFqbq9cdRFEVH4FsA1xmq/tI3L7l0rQkQH7slxLkj8AMfrQB9D1m6pr+kaJB52p6lbWkecZmlC8+nJr50TxJ8X/HLGOxjube3cAMYIRAmD33Nz+INdDo37P8AfX84vPFmuyTSsBujiYux9i7ckfSgDodc+Pnh2zc22iWt1q92eEEalELemSMn8Aazo0+KnxBAaaVPDOlP2jBErKffO76EY+lejeHfAPhrwso/srS4Ul6GZxvkP1Y8101AHEeFPhf4e8LN9pELahqTHc97d/O5PqAcgfz967eiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAQgEYIyD2NcZ4l+FvhTxRuku9NSG5bnz7f92+fU44P412lFAHzprf7OF/EzPoesQzrn5Y7pSjD6sMj9K4PU/hF430st5miSzRj/lpbsrg/QA5/SvseigD4SutA1iyJF3pN9Bj/nrbsv8AMVnYIPNffbRRyffRW+oBqrNpGm3GfOsLaTP96IH+lAHwjFNLC26KV4z6qxH8qtprWqR8Jqd4v0nYf1r7Xbwn4df72iWB+tuv+FKnhXQIzlNGsVPtAo/pQB8VLrmtSEKuq37E8YFw5/rV2K08WagP3VvrVyD/AHElf+Qr7Vh0ywtxiGyt4x/sxgf0qwsaIMIir9BigD44s/hX441NgyaDdAH+OZlTH13EGuq039njxRdMDfXljZxnuGMjD8MAfrX1BRQB4to37Omh2xV9W1K6vWHVIwI0P5c/rXoOi/D3wroAU2Gi2qyL0ldN7n6k5NdRRQA1EVFCqoCgcADAp1FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAH//2Q==" alt="Wiongo Robotics">
+  <div class="hdr-center">
+    <div class="hdr-title">Calculadora de <span>ROI</span> <span id="hdr-hotel-name"></span></div>
+    <div class="hdr-sub">Modelo físico real · Hotel Robotizado 360° · Wiongo Robotics</div>
+  </div>
+  <div style="width:120px"></div>
+</div>
+
+<!-- STEPPER -->
+<div class="stepper" id="stepper"></div>
+
+<!-- MAIN CONTENT -->
+<div class="container" id="main"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+const state = {
+  step: 1,
+  hotel: { name:'', type:'M', category:'resort', stars:4, occupancy:80 },
+  sel: { hk:true, fyb:true, eco:false, fd:false },
+  P: {
+    hk:  { surface:2500, floors:4, frequency:1, costH:14, days:365 },
+    fyb: { covers:400, distance:45, serviceType:'buffet', servicesPerDay:2, costH:15, days:365 },
+    eco: { deliveryPoints:8, distance:50, loadsPerDay:6, costH:13, days:300 },
+    fd:  { rooms:250, checkinsPerDay:80, distance:40, costH:14, days:365 }
+  },
+  lead: { name:'', role:'', email:'', phone:'', consent:false },
+  chart: null
+};
+
+// ════════════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════════════
+const RENTING = { S:2430, M:5176, L:7210, XL:10620 };
+const ROBOTS  = { S:7,    M:14,   L:19,   XL:27 };
+const GUESTS  = { S:'< 500', M:'500–1000', L:'1000–1500', XL:'> 1500' };
+const DEPTS = [
+  { id:'hk',  label:'Housekeeping', icon:'🧹', desc:'C40 — pasillos y zonas comunes (900 m²/h)', robots:'C30/C40/C55' },
+  { id:'fyb', label:'F&B',          icon:'🍽️', desc:'T9/S100 — buffet, desbarace, room service',  robots:'T9, S100, W3' },
+  { id:'eco', label:'Economato',    icon:'📦', desc:'S300 — logística interna (300 kg/viaje)',    robots:'S300' },
+  { id:'fd',  label:'Front Desk',   icon:'🛎️', desc:'W3 — equipajes integrado con ascensor',     robots:'W3, S100' }
+];
+
+// ════════════════════════════════════════════════════════════════
+// PHYSICS CALCULATIONS  (from Wiongo technical documents)
+// ════════════════════════════════════════════════════════════════
+function calcHK(p, occ) {
+  const manualH = (p.surface / 275) * p.frequency;
+  const elevH   = (p.floors - 1) * (300/3600) * p.frequency;
+  const robotH  = (p.surface / 900) * p.frequency + elevH + 0.5;
+  const freed   = Math.max(0, manualH - robotH);
+  const f = occ/100;
+  return { manualH, robotH, freedH:freed,
+    currentCost: manualH * p.costH * p.days * f,
+    savings:     freed   * p.costH * p.days * f,
+    hoursFreed:  Math.round(freed * p.days * f),
+    savingsPct:  manualH > 0 ? (freed/manualH)*100 : 0,
+    method:'Robot C40: 900 m²/h autónomo vs. manual 275 m²/h (Iberostar 2026)' };
+}
+function calcFYB(p, occ) {
+  const effCovers = p.covers * (occ/100);
+  const menaje    = effCovers * 5.8;
+  const trSucio   = Math.ceil(menaje / 200);
+  const trLimpio  = Math.ceil(menaje / 100);
+  const tRobotH   = (trSucio*(2*p.distance/0.3) + trLimpio*(2*p.distance/0.4)) / 3600 * p.servicesPerDay;
+  const supH      = 0.5 * p.servicesPerDay;
+  const trManual  = Math.ceil(menaje / 50) * 3;
+  const tManualH  = trManual * (2*p.distance/1.0) * 1.4 / 3600 * p.servicesPerDay;
+  const suit      = {buffet:1.0,mixto:0.82,roomservice:0.88,carta:0.65}[p.serviceType]||1.0;
+  const freed     = Math.max(0, (tManualH - supH)) * suit;
+  return { manualH:tManualH, robotH:tRobotH+supH, freedH:freed,
+    currentCost: tManualH * p.costH * p.days,
+    savings:     freed    * p.costH * p.days,
+    hoursFreed:  Math.round(freed * p.days),
+    savingsPct:  tManualH > 0 ? (freed/tManualH)*100 : 0,
+    tripsRobot: trSucio+trLimpio, tripsManual: trManual,
+    method:'Viajes robot (0.3–0.4 m/s, 200 uds) vs manual (1.0 m/s, 50 uds) · 5.8 menaje/comensal' };
+}
+function calcEco(p, occ) {
+  const f = occ/100;
+  const trManual  = p.deliveryPoints * p.loadsPerDay;
+  const tManualH  = trManual * (2*p.distance/0.8) * 1.5 / 3600;
+  const trRobot   = Math.ceil(trManual/3);
+  const tRobotH   = trRobot  * (2*p.distance/0.5) / 3600 + 0.25;
+  const freed     = Math.max(0, tManualH - tRobotH);
+  return { manualH:tManualH, robotH:tRobotH, freedH:freed,
+    currentCost: tManualH * p.costH * p.days * f,
+    savings:     freed    * p.costH * p.days * f,
+    hoursFreed:  Math.round(freed * p.days * f),
+    savingsPct:  tManualH > 0 ? (freed/tManualH)*100 : 0,
+    method:'S300 300 kg/viaje (3 destinos) vs carros manuales 25 kg (1 destino)' };
+}
+function calcFD(p, occ) {
+  const f = occ/100;
+  const luggage   = p.checkinsPerDay * f * 1.8;
+  const trManual  = Math.ceil(luggage/3);
+  const trRobot   = Math.ceil(luggage/8);
+  const tManualH  = trManual * (2*p.distance/0.8) * 1.3 / 3600;
+  const tRobotH   = trRobot  * (2*p.distance/0.4) / 3600 + 0.25;
+  const freed     = Math.max(0, tManualH - tRobotH);
+  return { manualH:tManualH, robotH:tRobotH, freedH:freed,
+    currentCost: tManualH * p.costH * p.days,
+    savings:     freed    * p.costH * p.days,
+    hoursFreed:  Math.round(freed * p.days),
+    savingsPct:  tManualH > 0 ? (freed/tManualH)*100 : 0,
+    method:'W3 equipaje: 8 piezas/viaje vs botones 3 piezas/viaje · 1.8 piezas/check-in' };
+}
+
+function computeAll() {
+  const occ = state.hotel.occupancy;
+  const results = [];
+  if(state.sel.hk)  results.push({...calcHK(state.P.hk, occ),   id:'hk',  label:'Housekeeping', icon:'🧹'});
+  if(state.sel.fyb) results.push({...calcFYB(state.P.fyb, occ),  id:'fyb', label:'F&B',          icon:'🍽️'});
+  if(state.sel.eco) results.push({...calcEco(state.P.eco, occ),  id:'eco', label:'Economato',    icon:'📦'});
+  if(state.sel.fd)  results.push({...calcFD(state.P.fd, occ),    id:'fd',  label:'Front Desk',   icon:'🛎️'});
+  const totalSavings = results.reduce((s,r)=>s+r.savings,0);
+  const totalCost    = results.reduce((s,r)=>s+r.currentCost,0);
+  const rentM  = RENTING[state.hotel.type];
+  const rentA  = rentM * 12;
+  const neto   = totalSavings - rentA;
+  const payM   = totalSavings > 0 ? (rentA/totalSavings)*12 : 999;
+  const roi3   = rentA > 0 ? ((neto*3)/(rentA*3))*100 : 0;
+  const roi5   = rentA > 0 ? ((neto*5)/(rentA*5))*100 : 0;
+  return { results, totalSavings, totalCost, rentM, rentA, neto, payM, roi3, roi5 };
+}
+
+// ════════════════════════════════════════════════════════════════
+// FORMATTERS
+// ════════════════════════════════════════════════════════════════
+const fmt  = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+const fmtN = n => new Intl.NumberFormat('es-ES',{maximumFractionDigits:0}).format(Math.round(n));
+const r1   = n => Math.round(n*10)/10;
+const escH = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ════════════════════════════════════════════════════════════════
+// STEPPER
+// ════════════════════════════════════════════════════════════════
+function renderStepper() {
+  const labels = ['Perfil','Variables físicas','Contacto','Tu ROI'];
+  document.getElementById('stepper').innerHTML = labels.map((l,i)=>{
+    const n=i+1, done=state.step>n, active=state.step===n;
+    return `${i>0?`<div class="step-line ${done?'done':''}"></div>`:''}
+    <div class="step-item">
+      <div class="step-circle ${active?'active':done?'done':''}">${done?'✓':n}</div>
+      <span class="step-label ${active?'active':done?'done':''}">${l}</span>
+    </div>`;
+  }).join('');
+  const name = state.hotel.name ? ` — ${state.hotel.name}` : '';
+  document.getElementById('hdr-hotel-name').textContent = name;
+}
+
+// ════════════════════════════════════════════════════════════════
+// STEP 1 — HOTEL PROFILE
+// ════════════════════════════════════════════════════════════════
+function renderStep1() {
+  const h = state.hotel;
+  const hotelCards = Object.entries(RENTING).map(([key,rent])=>`
+    <div class="hotel-card ${h.type===key?'selected':''}" onclick="setHotelType('${key}')">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">
+        <span class="hotel-card-name">Hotel ${key}</span>
+        <span style="font-size:12px;color:var(--muted)">${{S:'Pequeño',M:'Mediano',L:'Grande',XL:'Resort XL'}[key]}</span>
+      </div>
+      <div class="hotel-card-guests">${GUESTS[key]} huéspedes</div>
+      <div class="hotel-stat"><span style="color:var(--muted)">Robots pack</span><span class="hotel-stat-v">${ROBOTS[key]} robots</span></div>
+      <div class="hotel-stat"><span style="color:var(--muted)">Renting mensual</span><span class="hotel-stat-v">${fmt(rent)}</span></div>
+    </div>`).join('');
+
+  const deptCards = DEPTS.map(d=>`
+    <div class="dept-card ${state.sel[d.id]?'selected':''}" onclick="toggleDept('${d.id}')">
+      <span class="dept-icon">${d.icon}</span>
+      <div style="flex:1">
+        <div class="dept-name">${d.label}</div>
+        <div class="dept-desc">${d.desc}</div>
+        <div class="dept-robots">🤖 ${d.robots}</div>
+      </div>
+      <div class="dept-check">${state.sel[d.id]?'✓':''}</div>
+    </div>`).join('');
+
+  const anyDept = Object.values(state.sel).some(Boolean);
+  document.getElementById('main').innerHTML = `
+    <div class="card">
+      <p class="section-label">1A — Datos del hotel</p>
+      <div style="margin-bottom:12px">
+        <label class="lbl">Nombre del hotel</label>
+        <input class="big" type="text" id="inp-name" placeholder="Ej: Hotel Playa Esmeralda" value="${escH(h.name)}">
+      </div>
+      <div class="g3">
+        <div>
+          <label class="lbl">Categoría</label>
+          <select id="inp-category">
+            <option value="urbano" ${h.category==='urbano'?'selected':''}>Hotel Urbano</option>
+            <option value="resort" ${h.category==='resort'?'selected':''}>Resort Vacacional</option>
+            <option value="boutique" ${h.category==='boutique'?'selected':''}>Boutique</option>
+            <option value="congreso" ${h.category==='congreso'?'selected':''}>Congreso / MICE</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Estrellas</label>
+          <select id="inp-stars">
+            <option value="3" ${h.stars===3?'selected':''}>⭐⭐⭐ 3 estrellas</option>
+            <option value="4" ${h.stars===4?'selected':''}>⭐⭐⭐⭐ 4 estrellas</option>
+            <option value="5" ${h.stars===5?'selected':''}>⭐⭐⭐⭐⭐ 5 estrellas</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Ocupación media anual: <strong style="color:var(--cyan)">${h.occupancy}%</strong></label>
+          <input type="range" id="inp-occ" min="30" max="100" value="${h.occupancy}">
+          <div class="range-labels"><span>30%</span><span>100%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-label">1B — Tipología por número de huéspedes</p>
+      <div class="g2">${hotelCards}</div>
+    </div>
+
+    <div class="card">
+      <p class="section-label">1C — Departamentos a robotizar</p>
+      <div class="g2">${deptCards}</div>
+    </div>
+
+    <button class="btn-p" ${anyDept?'':'disabled'} onclick="nextStep()">
+      Siguiente → Variables físicas del hotel
+    </button>`;
+
+  // Events
+  document.getElementById('inp-name').oninput = e => { state.hotel.name = e.target.value; renderStepper(); };
+  document.getElementById('inp-category').onchange = e => state.hotel.category = e.target.value;
+  document.getElementById('inp-stars').onchange = e => state.hotel.stars = +e.target.value;
+  document.getElementById('inp-occ').oninput = e => {
+    state.hotel.occupancy = +e.target.value;
+    e.target.previousElementSibling.innerHTML = `Ocupación media anual: <strong style="color:var(--cyan)">${e.target.value}%</strong>`;
+  };
+}
+
+// ════════════════════════════════════════════════════════════════
+// STEP 2 — PHYSICAL VARIABLES
+// ════════════════════════════════════════════════════════════════
+function physPreview(res) {
+  return `<div class="phys-preview g4">
+    <div class="phys-item"><div class="lv">Horas manual/día</div><div class="vv">${r1(res.manualH)} h</div></div>
+    <div class="phys-item"><div class="lv">Horas robot/día</div><div class="vv">${r1(res.robotH)} h</div></div>
+    <div class="phys-item"><div class="lv">Horas liberadas/día</div><div class="vv cyan">${r1(res.freedH)} h</div></div>
+    <div class="phys-item"><div class="lv">Ahorro anual</div><div class="vv green">${fmt(res.savings)}</div></div>
+  </div>`;
+}
+
+function renderStep2() {
+  const occ = state.hotel.occupancy;
+  const { totalSavings, rentA, neto, payM } = computeAll();
+  const payColor = payM<18?'var(--green)':payM<30?'var(--orange)':'var(--red)';
+
+  let html = `<div class="card card-cyan" style="margin-bottom:14px">
+    <p style="font-size:13px;color:var(--muted);margin:0">🔬 <strong style="color:#fff">Modelo físico real.</strong>
+    Los ahorros se calculan desde parámetros físicos medidos: velocidades de robot, capacidades de carga y distancias reales.
+    El porcentaje de ahorro NO es fijo — emerge del cálculo de ingeniería de Wiongo.</p>
+  </div>`;
+
+  if(state.sel.hk) {
+    const res = calcHK(state.P.hk, occ);
+    html += `<div class="card" id="card-hk">
+      <p class="section-label">🧹 Housekeeping — Robot C40 (900 m²/h autónomo)</p>
+      <div class="hint-box"><strong>Fórmula:</strong> Horas manual = superficie ÷ 275 m²/h · Horas robot = superficie ÷ 900 m²/h + 5 min/planta ascensor + 0,5h supervisión
+      <br><em>Fuente: Estudio Iberostar 2026 (Wiongo) + Ficha Técnica Modular</em></div>
+      <div class="g4">
+        <div><label class="lbl">Superficie m² (zonas comunes)</label><input type="number" id="hk-surface" value="${state.P.hk.surface}" min="100" max="20000"></div>
+        <div><label class="lbl">Número de plantas</label><input type="number" id="hk-floors" value="${state.P.hk.floors}" min="1" max="20"></div>
+        <div><label class="lbl">Limpiezas por día</label><input type="number" id="hk-frequency" value="${state.P.hk.frequency}" min="1" max="3"></div>
+        <div><label class="lbl">Coste/hora personal (€)</label><input type="number" id="hk-costH" value="${state.P.hk.costH}" min="10" max="30"></div>
+      </div>
+      <div id="prev-hk">${physPreview(res)}</div>
+    </div>`;
+  }
+
+  if(state.sel.fyb) {
+    const res = calcFYB(state.P.fyb, occ);
+    html += `<div class="card" id="card-fyb">
+      <p class="section-label">🍽️ F&amp;B — Robots T9/S100 (0,3–0,4 m/s · 150–200 kg/viaje)</p>
+      <div class="hint-box"><strong>Fórmula:</strong> Menaje = aforo × ocupación × 5,8 uds/comensal → Viajes robot (200 uds sucio / 100 limpio) vs manual (50 uds/viaje) × tiempo según distancia
+      <br><em>Fuente: 02_CALCULO Playa Esmeralda + 03_SUPUESTOS Wiongo (5,8 menaje/comensal)</em></div>
+      <div class="g3" style="margin-bottom:12px">
+        <div><label class="lbl">Aforo comensales (plazas)</label><input type="number" id="fyb-covers" value="${state.P.fyb.covers}" min="50" max="3000"></div>
+        <div><label class="lbl">Distancia cocina→sala (metros)</label><input type="number" id="fyb-distance" value="${state.P.fyb.distance}" min="5" max="200"></div>
+        <div><label class="lbl">Servicios por día</label><input type="number" id="fyb-servicesPerDay" value="${state.P.fyb.servicesPerDay}" min="1" max="4"></div>
+        <div>
+          <label class="lbl">Tipo de servicio</label>
+          <select id="fyb-serviceType">
+            <option value="buffet" ${state.P.fyb.serviceType==='buffet'?'selected':''}>Buffet (más idóneo)</option>
+            <option value="mixto" ${state.P.fyb.serviceType==='mixto'?'selected':''}>Buffet + Carta</option>
+            <option value="roomservice" ${state.P.fyb.serviceType==='roomservice'?'selected':''}>Room Service</option>
+            <option value="carta" ${state.P.fyb.serviceType==='carta'?'selected':''}>Solo Carta</option>
+          </select>
+        </div>
+        <div><label class="lbl">Coste/hora personal (€)</label><input type="number" id="fyb-costH" value="${state.P.fyb.costH}" min="10" max="30"></div>
+        <div><label class="lbl">Días operación/año</label><input type="number" id="fyb-days" value="${state.P.fyb.days}" min="100" max="365"></div>
+      </div>
+      <div id="prev-fyb">${physPreview(res)}</div>
+    </div>`;
+  }
+
+  if(state.sel.eco) {
+    const res = calcEco(state.P.eco, occ);
+    html += `<div class="card" id="card-eco">
+      <p class="section-label">📦 Economato — Robot S300 (300 kg/viaje autónomo)</p>
+      <div class="hint-box"><strong>Fórmula:</strong> Viajes robot (agrupando 3 destinos/viaje) vs manual (1 destino, 25 kg/carro) × distancia y velocidad</div>
+      <div class="g4">
+        <div><label class="lbl">Puntos de entrega</label><input type="number" id="eco-deliveryPoints" value="${state.P.eco.deliveryPoints}" min="2" max="50"></div>
+        <div><label class="lbl">Distancia almacén→destino (m)</label><input type="number" id="eco-distance" value="${state.P.eco.distance}" min="10" max="300"></div>
+        <div><label class="lbl">Cargas totales/día</label><input type="number" id="eco-loadsPerDay" value="${state.P.eco.loadsPerDay}" min="2" max="50"></div>
+        <div><label class="lbl">Coste/hora personal (€)</label><input type="number" id="eco-costH" value="${state.P.eco.costH}" min="10" max="25"></div>
+      </div>
+      <div id="prev-eco">${physPreview(res)}</div>
+    </div>`;
+  }
+
+  if(state.sel.fd) {
+    const res = calcFD(state.P.fd, occ);
+    html += `<div class="card" id="card-fd">
+      <p class="section-label">🛎️ Front Desk — Robot W3 (integración ascensor)</p>
+      <div class="hint-box"><strong>Fórmula:</strong> Equipaje = check-ins × 1,8 piezas → Viajes robot (8 piezas) vs botones manual (3 piezas) × distancia recepción→ascensor</div>
+      <div class="g4">
+        <div><label class="lbl">Nº habitaciones</label><input type="number" id="fd-rooms" value="${state.P.fd.rooms}" min="20" max="2000"></div>
+        <div><label class="lbl">Check-ins estimados/día</label><input type="number" id="fd-checkinsPerDay" value="${state.P.fd.checkinsPerDay}" min="10" max="500"></div>
+        <div><label class="lbl">Distancia recepción→ascensor (m)</label><input type="number" id="fd-distance" value="${state.P.fd.distance}" min="5" max="200"></div>
+        <div><label class="lbl">Coste/hora personal (€)</label><input type="number" id="fd-costH" value="${state.P.fd.costH}" min="10" max="25"></div>
+      </div>
+      <div id="prev-fd">${physPreview(res)}</div>
+    </div>`;
+  }
+
+  // Live preview
+  html += `<div class="live-preview g4" id="live-preview">
+    <div class="live-item"><div class="ll">Ahorro bruto/año</div><div class="lv" style="color:var(--cyan)" id="lp-sav">${fmt(totalSavings)}</div></div>
+    <div class="live-item"><div class="ll">Coste renting/año</div><div class="lv" style="color:var(--orange)">${fmt(rentA)}</div></div>
+    <div class="live-item"><div class="ll">Resultado neto/año</div><div class="lv" style="color:${neto>0?'var(--green)':'var(--red)'}" id="lp-net">${fmt(neto)}</div></div>
+    <div class="live-item"><div class="ll">Payback estimado</div><div class="lv" style="color:${payColor}" id="lp-pay">${Math.round(payM)} meses</div></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-s" onclick="prevStep()">← Volver</button>
+    <button class="btn-p" onclick="nextStep()">Siguiente → Datos de contacto</button>
+  </div>`;
+
+  document.getElementById('main').innerHTML = html;
+  attachPhysicsListeners();
+}
+
+function attachPhysicsListeners() {
+  const occ = state.hotel.occupancy;
+  const depts2 = ['hk','fyb','eco','fd'];
+  depts2.forEach(dept => {
+    if(!state.sel[dept]) return;
+    const fields = Object.keys(state.P[dept]);
+    fields.forEach(field => {
+      const el = document.getElementById(`${dept}-${field}`);
+      if(!el) return;
+      el.oninput = el.onchange = () => {
+        state.P[dept][field] = isNaN(+el.value) ? el.value : +el.value;
+        // Update preview
+        const res = dept==='hk' ? calcHK(state.P.hk, occ)
+                  : dept==='fyb'? calcFYB(state.P.fyb, occ)
+                  : dept==='eco'? calcEco(state.P.eco, occ)
+                  : calcFD(state.P.fd, occ);
+        const prevEl = document.getElementById(`prev-${dept}`);
+        if(prevEl) prevEl.innerHTML = physPreview(res);
+        updateLivePreview();
+      };
+    });
+  });
+}
+
+function updateLivePreview() {
+  const { totalSavings, neto, payM } = computeAll();
+  const payColor = payM<18?'var(--green)':payM<30?'var(--orange)':'var(--red)';
+  const s = document.getElementById('lp-sav');
+  const n = document.getElementById('lp-net');
+  const p = document.getElementById('lp-pay');
+  if(s) s.textContent = fmt(totalSavings);
+  if(n) { n.textContent = fmt(neto); n.style.color = neto>0?'var(--green)':'var(--red)'; }
+  if(p) { p.textContent = Math.round(payM)+' meses'; p.style.color = payColor; }
+}
+
+// ════════════════════════════════════════════════════════════════
+// STEP 3 — LEAD CAPTURE
+// ════════════════════════════════════════════════════════════════
+function renderStep3() {
+  document.getElementById('main').innerHTML = `
+    <div class="card">
+      <p class="section-label">3 — Datos de contacto</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Introduce tus datos para acceder al informe completo y que nuestro equipo pueda enviarte el análisis personalizado con visita técnica.</p>
+      <div class="g2">
+        <div><label class="lbl">Nombre completo *</label><input type="text" id="ld-name" placeholder="Ana García" value="${escH(state.lead.name)}"></div>
+        <div><label class="lbl">Cargo *</label><input type="text" id="ld-role" placeholder="Dir. Operaciones" value="${escH(state.lead.role)}"></div>
+        <div><label class="lbl">Email corporativo *</label><input type="email" id="ld-email" placeholder="ana@hotel.com" value="${escH(state.lead.email)}"></div>
+        <div><label class="lbl">Teléfono</label><input type="tel" id="ld-phone" placeholder="+34 600 000 000" value="${escH(state.lead.phone)}"></div>
+      </div>
+      <div class="consent-row" onclick="toggleConsent()">
+        <div class="consent-box ${state.lead.consent?'checked':''}" id="consent-box">${state.lead.consent?'✓':''}</div>
+        <span class="consent-text">Acepto el tratamiento de mis datos por Wiongo Robotics para el envío de información comercial. Puedo revocar el consentimiento en cualquier momento.</span>
+      </div>
+      <div class="error-msg" id="lead-error"></div>
+    </div>
+    <div class="card" style="padding:13px 20px">
+      <p style="font-size:12px;color:var(--muted);margin:0">🔒 Tus datos están protegidos conforme al RGPD. Solo se usarán para enviarte el análisis y contactarte si lo solicitas.</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn-s" onclick="prevStep()">← Volver</button>
+      <button class="btn-p" onclick="submitLead()">🚀 Ver mi ROI completo</button>
+    </div>`;
+
+  ['name','role','email','phone'].forEach(f=>{
+    document.getElementById(`ld-${f}`).oninput = e => state.lead[f] = e.target.value;
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// STEP 4 — RESULTS
+// ════════════════════════════════════════════════════════════════
+function renderStep4() {
+  const { results, totalSavings, totalCost, rentM, rentA, neto, payM, roi3, roi5 } = computeAll();
+  const payColor = payM<18?'var(--green)':payM<30?'var(--orange)':'var(--red)';
+  const payBg    = payM<18?'rgba(34,197,94,0.12)':payM<30?'rgba(245,158,11,0.12)':'rgba(239,68,68,0.12)';
+  const payLabel = payM<18?'✅ Retorno excepcional':payM<30?'⚠️ Retorno sólido':'🔴 Revisar configuración';
+  const payMsg   = payM<18?'Por debajo de 18 meses. Decisión de inversión clara.':payM<30?'Entre 18 y 30 meses. Muy competitivo.':'Ajusta los parámetros o los departamentos seleccionados.';
+  const emoji    = payM<18?'🟢':payM<30?'🟡':'🔴';
+
+  const deptRows = results.map(r=>`
+    <div class="dept-result">
+      <div class="dept-result-header">
+        <div>
+          <div style="font-size:14px;font-weight:700">${r.icon} ${r.label}</div>
+          <div class="dept-result-method">📐 ${r.method}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:800;color:var(--green)">${fmt(r.savings)}/año</div>
+          <div style="font-size:11px;color:var(--muted)">${r1(r.savingsPct)}% ahorro calculado</div>
+        </div>
+      </div>
+      <div class="g4" style="font-size:12px">
+        <div style="text-align:center"><div style="color:var(--muted);font-size:10px">Horas manual/día</div><div style="font-weight:700">${r1(r.manualH)} h</div></div>
+        <div style="text-align:center"><div style="color:var(--muted);font-size:10px">Horas robot/día</div><div style="font-weight:700">${r1(r.robotH)} h</div></div>
+        <div style="text-align:center"><div style="color:var(--muted);font-size:10px">Horas liberadas/día</div><div style="font-weight:700;color:var(--cyan)">${r1(r.freedH)} h</div></div>
+        <div style="text-align:center"><div style="color:var(--muted);font-size:10px">Horas liberadas/año</div><div style="font-weight:700;color:var(--cyan)">${fmtN(r.hoursFreed)} h</div></div>
+      </div>
+    </div>`).join('');
+
+  const chartData = [0,1,2,3,4,5].map(y=>({
+    y: y===0?'Hoy':`Año ${y}`,
+    sav: Math.round(totalSavings*y),
+    rent: Math.round(rentA*y),
+    net: Math.round(neto*y)
+  }));
+
+  document.getElementById('main').innerHTML = `
+    <!-- KPI CARDS -->
+    <div class="kpi-grid">
+      <div class="kpi-card hl"><div class="kpi-label">Ahorro Anual</div><div class="kpi-value" id="anim-sav">€0</div><div class="kpi-sub">cálculo físico real</div></div>
+      <div class="kpi-card"><div class="kpi-label">Resultado Neto / Mes</div><div class="kpi-value" id="anim-net">€0</div><div class="kpi-sub">${fmt(neto)}/año</div></div>
+      <div class="kpi-card"><div class="kpi-label">Payback</div><div class="kpi-value" style="color:${payColor}" id="anim-pay">0 m.</div><div class="kpi-sub">meses hasta recuperar</div></div>
+    </div>
+
+    <!-- SEMÁFORO -->
+    <div class="semaforo" style="background:${payBg};border-color:${payColor};margin-bottom:14px">
+      <div style="font-size:30px">${emoji}</div>
+      <div>
+        <div style="font-size:15px;font-weight:800;color:${payColor}">${payLabel} — Payback: ${Math.round(payM)} meses</div>
+        <div style="font-size:12px;color:var(--muted)">${payMsg}</div>
+      </div>
+    </div>
+
+    <!-- DESGLOSE FÍSICO -->
+    <div class="card">
+      <p class="section-label">Desglose físico por departamento</p>
+      ${deptRows}
+      <div style="border-top:2px solid var(--cyan);padding-top:14px;margin-top:6px">
+        <div class="g3" style="text-align:center;margin-bottom:14px">
+          <div><div style="font-size:11px;color:var(--muted)">Coste actual total</div><div style="font-size:17px;font-weight:800;color:var(--muted)">${fmt(totalCost)}</div></div>
+          <div><div style="font-size:11px;color:var(--muted)">Ahorro bruto anual</div><div style="font-size:17px;font-weight:800;color:var(--green)">${fmt(totalSavings)}</div></div>
+          <div><div style="font-size:11px;color:var(--muted)">Coste renting anual</div><div style="font-size:17px;font-weight:800;color:var(--orange)">${fmt(rentA)}</div></div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:12px;color:var(--muted)">RESULTADO OPERATIVO NETO ANUAL</div>
+          <div style="font-size:36px;font-weight:800;color:${neto>0?'var(--cyan)':'var(--red)'}">${fmt(neto)}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINANCIERO DETALLE -->
+    <div class="card">
+      <p class="section-label">Flujo financiero</p>
+      <div class="summary-row"><span style="color:var(--muted)">Ahorro operativo mensual</span><span style="font-weight:700;color:var(--green)">${fmt(totalSavings/12)}</span></div>
+      <div class="summary-row"><span style="color:var(--muted)">Coste renting mensual (${ROBOTS[state.hotel.type]} robots)</span><span style="font-weight:700;color:var(--red)">– ${fmt(rentM)}</span></div>
+      <div class="summary-row" style="padding-top:14px;border-top:2px solid var(--cyan);border-bottom:none">
+        <span style="font-weight:700">Resultado neto mensual</span>
+        <span style="font-size:22px;font-weight:800;color:var(--cyan)">${fmt(neto/12)}</span>
+      </div>
+      <div class="g3" style="margin-top:16px">
+        <div style="background:var(--cyanA);border:1px solid var(--cyan);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">ROI 3 años</div>
+          <div style="font-size:22px;font-weight:800;color:var(--cyan)">${Math.round(roi3)}%</div>
+        </div>
+        <div style="background:var(--faint);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">ROI 5 años</div>
+          <div style="font-size:22px;font-weight:800">${Math.round(roi5)}%</div>
+        </div>
+        <div style="background:var(--faint);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">Neto acum. 5 años</div>
+          <div style="font-size:22px;font-weight:800;color:var(--green)">${fmt(neto*5)}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="card">
+      <p class="section-label">Proyección financiera a 5 años</p>
+      <div class="chart-wrap"><canvas id="roi-chart"></canvas></div>
+    </div>
+
+    <!-- CTA -->
+    <div class="card">
+      <div class="btn-row">
+        <button class="btn-p" onclick="exportPDF()">📄 Descargar informe PDF</button>
+        <button class="btn-dark" onclick="requestVisit()">📩 Solicitar visita técnica</button>
+      </div>
+      <button class="btn-s" onclick="restart()">← Recalcular con otros parámetros</button>
+    </div>
+
+    <p class="foot-note">
+      Cálculo basado en velocidades reales robots Keenon: C40 900 m²/h, T9 0,3 m/s, S300 0,5 m/s, W3 0,4 m/s.
+      Datos históricos: 5,8 menaje/comensal, 275 m²/h manual (Iberostar 2026 + Wiongo Field Data).
+      El resultado real varía según layout, tipo de suelo y operativa específica de cada hotel.
+    </p>`;
+
+  // Animate numbers
+  animateNum('anim-sav', totalSavings, '€');
+  animateNum('anim-net', neto/12, '€');
+  animateNum('anim-pay', Math.round(payM), '', ' m.');
+
+  // Chart
+  setTimeout(()=>{
+    if(state.chart) { state.chart.destroy(); state.chart=null; }
+    const ctx = document.getElementById('roi-chart');
+    if(!ctx) return;
+    state.chart = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels: chartData.map(d=>d.y),
+        datasets:[
+          { label:'Ahorro acumulado', data:chartData.map(d=>d.sav),
+            borderColor:'#22C55E', backgroundColor:'rgba(34,197,94,0.12)',
+            fill:true, tension:0.3, borderWidth:2, pointRadius:4 },
+          { label:'Coste renting acumulado', data:chartData.map(d=>d.rent),
+            borderColor:'#F59E0B', backgroundColor:'rgba(245,158,11,0.08)',
+            fill:true, tension:0.3, borderWidth:2, pointRadius:4 },
+          { label:'Beneficio neto', data:chartData.map(d=>d.net),
+            borderColor:'#00AEEF', backgroundColor:'transparent',
+            fill:false, tension:0.3, borderWidth:2.5, borderDash:[6,3], pointRadius:4 }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.5)', font:{size:11,family:'Montserrat'} } } },
+        scales:{
+          x:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'rgba(255,255,255,0.5)', font:{size:11} } },
+          y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'rgba(255,255,255,0.5)', font:{size:10},
+              callback: v=>v>=1000?Math.round(v/1000)+'k€':v+'€' } }
+        }
+      }
+    });
+  }, 100);
+}
+
+function animateNum(id, target, prefix='', suffix='') {
+  const el = document.getElementById(id);
+  if(!el) return;
+  let cur=0; const step=target/45; const isNeg=target<0; const abs=Math.abs(target);
+  const t=setInterval(()=>{
+    cur+=Math.abs(step);
+    if(cur>=abs){ el.textContent=prefix+(isNeg?'-':'')+fmtN(abs)+suffix; clearInterval(t); }
+    else el.textContent=prefix+(isNeg?'-':'')+fmtN(cur)+suffix;
+  },18);
+}
+
+// ════════════════════════════════════════════════════════════════
+// PDF EXPORT
+// ════════════════════════════════════════════════════════════════
+function exportPDF() {
+  const { results, totalSavings, totalCost, rentM, rentA, neto, payM, roi3, roi5 } = computeAll();
+  const payColor = payM<18?'#22C55E':payM<30?'#F59E0B':'#EF4444';
+  const hotelName = state.hotel.name || 'Tu Hotel';
+  const rows = results.map(r=>`<tr>
+    <td>${r.icon} ${r.label}</td>
+    <td>${fmt(r.currentCost)}</td>
+    <td>${r1(r.savingsPct)}%</td>
+    <td style="color:#22C55E;font-weight:700">${fmt(r.savings)}</td>
+    <td>${fmtN(r.hoursFreed)} h/año</td>
+    <td style="font-size:10px;color:#6b7280">${r.method}</td>
+  </tr>`).join('');
+
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>ROI Wiongo — ${hotelName}</title>
+  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:#f5f7fa;color:#1a2332;padding:32px}
+  .page{max-width:960px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+  .hd{background:#0B1A2A;padding:22px 30px;display:flex;align-items:center;justify-content:space-between}
+  .hd-r{text-align:right;color:#fff}.hd-r h1{font-size:18px;font-weight:800;margin-bottom:4px}.hd-r p{font-size:11px;color:rgba(255,255,255,.45)}
+  .cyan{color:#00AEEF}.body{padding:30px}
+  h2{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#00AEEF;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-top:24px}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+  .kpi{border:1px solid #e5e7eb;border-radius:8px;padding:14px;text-align:center}
+  .kpi.hl{background:#EFF9FF;border-color:#00AEEF}
+  .kl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:5px}
+  .kv{font-size:22px;font-weight:800;color:#0B1A2A}.kpi.hl .kv{color:#00AEEF}.ks{font-size:10px;color:#9ca3af;margin-top:3px}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
+  th{background:#f9fafb;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;border-bottom:1px solid #e5e7eb}
+  td{padding:8px 10px;border-bottom:1px solid #f3f4f6}
+  .tr td{font-weight:700;background:#f9fafb;border-top:2px solid #e5e7eb}
+  .sem{border-radius:8px;padding:12px 16px;display:flex;gap:12px;align-items:center;border:1px solid ${payColor};background:${payColor}20;margin-top:12px}
+  .note{font-size:10px;color:#9ca3af;margin-top:6px;font-style:italic}
+  .footer{background:#f9fafb;padding:14px 30px;font-size:10px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;margin-top:24px}
+  @media print{body{background:#fff;padding:0}.page{box-shadow:none;border-radius:0}}
+  </style></head><body>
+  <div class="page">
+    <div class="hd">
+      <img src="${document.querySelector('.hdr-logo').src}" style="height:38px" alt="Wiongo">
+      <div class="hd-r">
+        <h1>${hotelName} — <span class="cyan">Análisis ROI</span></h1>
+        <p>Hotel ${state.hotel.type} (${GUESTS[state.hotel.type]} huéspedes) · Ocupación ${state.hotel.occupancy}% · ${new Date().toLocaleDateString('es-ES')}</p>
+      </div>
+    </div>
+    <div class="body">
+      <h2 style="margin-top:0">Resumen ejecutivo</h2>
+      <div class="g3">
+        <div class="kpi hl"><div class="kl">Ahorro anual (física)</div><div class="kv">${fmt(totalSavings)}</div><div class="ks">calculado desde física real</div></div>
+        <div class="kpi"><div class="kl">Resultado neto/mes</div><div class="kv">${fmt(neto/12)}</div><div class="ks">ahorro − renting</div></div>
+        <div class="kpi"><div class="kl">Payback</div><div class="kv" style="color:${payColor}">${Math.round(payM)} m.</div><div class="ks">meses hasta recuperar</div></div>
+        <div class="kpi"><div class="kl">ROI 3 años</div><div class="kv">${Math.round(roi3)}%</div></div>
+        <div class="kpi"><div class="kl">ROI 5 años</div><div class="kv">${Math.round(roi5)}%</div></div>
+        <div class="kpi"><div class="kl">Renting mensual</div><div class="kv">${fmt(rentM)}</div><div class="ks">${ROBOTS[state.hotel.type]} robots incl.</div></div>
+      </div>
+      <h2>Desglose por departamento — Metodología física</h2>
+      <table><thead><tr><th>Departamento</th><th>Coste actual/año</th><th>% Ahorro</th><th>Ahorro estimado</th><th>Horas liberadas</th><th>Base de cálculo</th></tr></thead>
+      <tbody>${rows}
+        <tr class="tr"><td>TOTAL</td><td>${fmt(totalCost)}</td><td>—</td><td style="color:#22C55E">${fmt(totalSavings)}</td><td>—</td><td></td></tr>
+      </tbody></table>
+      <p class="note">El % de ahorro NO es un rango fijo — emerge del cálculo físico de velocidades, capacidades y distancias reales de los robots Wiongo.</p>
+      <h2>Flujo financiero</h2>
+      <table><thead><tr><th>Concepto</th><th>Mensual</th><th>Anual</th></tr></thead><tbody>
+        <tr><td>Ahorro operativo</td><td style="color:#22C55E;font-weight:600">${fmt(totalSavings/12)}</td><td style="color:#22C55E;font-weight:600">${fmt(totalSavings)}</td></tr>
+        <tr><td>Coste renting (${ROBOTS[state.hotel.type]} robots)</td><td style="color:#EF4444">– ${fmt(rentM)}</td><td style="color:#EF4444">– ${fmt(rentA)}</td></tr>
+        <tr class="tr"><td>RESULTADO NETO</td><td style="color:#00AEEF;font-size:16px">${fmt(neto/12)}</td><td style="color:#00AEEF;font-size:16px">${fmt(neto)}</td></tr>
+      </tbody></table>
+      <div class="sem">
+        <div style="font-size:20px">${payM<18?'🟢':payM<30?'🟡':'🔴'}</div>
+        <div><strong style="color:${payColor}">Payback: ${Math.round(payM)} meses</strong><br>
+        <span style="font-size:12px;color:#374151">${payM<18?'Retorno excepcional: inferior a 18 meses.':payM<30?'Retorno sólido entre 18 y 30 meses.':'Revisar configuración de departamentos o parámetros.'}</span></div>
+      </div>
+      ${state.lead.name?`<h2>Datos de contacto</h2><p style="font-size:13px">${escH(state.lead.name)} · ${escH(state.lead.role)} · ${escH(state.lead.email)} · ${escH(state.lead.phone)}</p>`:''}
+    </div>
+    <div class="footer">Análisis generado por Wiongo Robotics. Cálculo basado en velocidades reales: C40 900 m²/h, T9 0.3 m/s, S300 0.5 m/s · Datos históricos: 5.8 menaje/comensal, 275 m²/h manual (Iberostar 2026) · wiongo.com</div>
+  </div>
+  <script>window.onload=function(){window.print()}<\/script>
+  </body></html>`;
+
+  const blob = new Blob([html],{type:'text/html;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`ROI_Wiongo_${(state.hotel.name||'Hotel').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.html`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════════════════════════════
+// NAVIGATION & HELPERS
+// ════════════════════════════════════════════════════════════════
+function setHotelType(t){ state.hotel.type=t; renderStep1(); }
+function toggleDept(id){ state.sel[id]=!state.sel[id]; renderStep1(); }
+function toggleConsent(){
+  state.lead.consent=!state.lead.consent;
+  const b=document.getElementById('consent-box');
+  if(b){b.classList.toggle('checked',state.lead.consent);b.textContent=state.lead.consent?'✓':'';}
+}
+function nextStep(){ state.step=Math.min(4,state.step+1); render(); }
+function prevStep(){ state.step=Math.max(1,state.step-1); render(); }
+function restart(){ state.step=1; render(); }
+
+function submitLead(){
+  const err=document.getElementById('lead-error');
+  if(!state.lead.name||!state.lead.email){if(err)err.textContent='⚠️ Nombre y email son obligatorios.';return;}
+  if(!state.lead.consent){if(err)err.textContent='⚠️ Debes aceptar el tratamiento de datos.';return;}
+  nextStep();
+}
+
+function requestVisit(){
+  const subj = encodeURIComponent(`ROI Wiongo — ${state.hotel.name||'Hotel'}`);
+  const body = encodeURIComponent(`Hola,\n\nSoy ${state.lead.name||'[nombre]'} y acabo de calcular el ROI con la calculadora de Wiongo.\nMe gustaría recibir una visita técnica personalizada.\n\nSaludos`);
+  window.open(`mailto:info@wiongo.com?subject=${subj}&body=${body}`,'_blank');
+}
+
+// ════════════════════════════════════════════════════════════════
+// MAIN RENDER
+// ════════════════════════════════════════════════════════════════
+function render(){
+  renderStepper();
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(state.step===1) renderStep1();
+  else if(state.step===2) renderStep2();
+  else if(state.step===3) renderStep3();
+  else if(state.step===4) renderStep4();
+}
+
+// ════════════════════════════════════════════════════════════════
+// BOOT — always start at step 1, fix bfcache
+// ════════════════════════════════════════════════════════════════
+function resetState() {
+  state.step = 1;
+  state.hotel = { name:'', type:'M', category:'resort', stars:4, occupancy:80 };
+  state.sel   = { hk:true, fyb:true, eco:false, fd:false };
+  state.P     = {
+    hk:  { surface:2500, floors:4, frequency:1, costH:14, days:365 },
+    fyb: { covers:400, distance:45, serviceType:'buffet', servicesPerDay:2, costH:15, days:365 },
+    eco: { deliveryPoints:8, distance:50, loadsPerDay:6, costH:13, days:300 },
+    fd:  { rooms:250, checkinsPerDay:80, distance:40, costH:14, days:365 }
+  };
+  state.lead  = { name:'', role:'', email:'', phone:'', consent:false };
+  if(state.chart){ state.chart.destroy(); state.chart=null; }
+}
+
+// Fix bfcache: when user hits Back button, browser restores full JS state.
+// This forces a clean restart instead of showing old results.
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted) {
+    resetState();
+    render();
+  }
+});
+
+// Fix visibility change (tab switching in some browsers)
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && state.step === 4) {
+    // Don't reset if user is actively viewing results — only reset if navigating back
+  }
+});
+
+resetState();
+render();
+</script>
+</body>
+</html>
